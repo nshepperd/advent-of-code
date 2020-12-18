@@ -46,19 +46,15 @@ input :: [Text]
 input = unsafePerformIO (T.lines <$> T.readFile "input/18.txt")
 
 part1 :: Int
-part1 = sum (map (parse p) input)
+part1 = sum (map (parse expr) input)
   where
-    item = p_nat <|> (char '(' *> spaces *> p <* spaces <* char ')')
-    k a = (do
-      op <- oneOf "*+" <* spaces
-      b <- item <* spaces
-      case op of
-        '+' -> k (a+b)
-        '*' -> k (a*b)) <|> pure a
-    p = do
-      a <- item
-      spaces
-      k a
+    item = (p_nat <|> (char '(' *> spaces *> expr <* char ')')) <* spaces
+    k a = (do op <- oneOf "*+" <* spaces
+              b <- item <* spaces
+              case op of
+                '+' -> k (a + b)
+                '*' -> k (a * b)) <|> pure a
+    expr = item >>= k
 
 part2 :: Int
 part2 = sum (map (parse p) input)
