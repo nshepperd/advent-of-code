@@ -12,6 +12,8 @@ import           Control.Concurrent
 import           Control.Concurrent.STM
 import           Control.Concurrent.STM.TQueue
 import           Control.Monad
+import           Control.Monad.Codensity
+import           Control.Monad.Trans
 import           Control.Monad.Trans.State
 import           Data.Bits
 import           Data.Char
@@ -46,58 +48,65 @@ import qualified Util.Text as T
 loeb :: Functor f => f (f r -> r) -> f r
 loeb f = let r = fmap ($r) f in r
 
-input :: (Map Int Text, [Text])
+data Atom = Lit Text | Ref Int
+  deriving (Show)
+type Rule = [[Atom]]
+
+manyspace :: Parser String
+manyspace = many (char ' ')
+
+p_rule :: Parser Rule
+p_rule = some $ do
+  let lit = Lit <$> (char '"' *> someText letter <* char '"' <* manyspace)
+      ref = Ref <$> (p_nat <* manyspace)
+  parts <- some (lit <|> ref)
+  optional (text "| ")
+  return parts
+
+input :: (Map Int Rule, [Text])
 input = unsafePerformIO (parse p <$> T.readFile "input/19.txt")
   where
     p = do rules <- p_rules
            txts <- p_text
            return (rules, txts)
     p_rules = fmap Map.fromList $ some $ do
-      a <- p_nat
+      i <- p_nat
       text ": "
-      b <- someText (noneOf "\n")
-      spaces
-      return (a, b)
+      rule <- p_rule <* spaces
+      return (i, rule)
     p_text = some $ do
       txt <- someText letter
       spaces
       return txt
 
-part1 = map (parse ptry) (snd input)
+part1 = count True $ map run (snd input)
   where
     p :: Map Int (Parser Text)
     p = loeb (sub <$> fst input)
-    raw = char '"' *> (text <$> someText (noneOf "\"")) <* char '"' <* spaces
-    sub txt rules = let ref = (rules Map.!) <$> p_nat <* spaces
-                        p_rule = do
-                          options <- some $ do
-                            parts <- some (raw <|> ref)
-                            optional (char '|')
-                            spaces
-                            return (foldr1 (##) parts)
-                          return (asum (map try options))
-                    in parse (p_rule <* eof) txt
+    sub rule ps = let atom (Lit txt) = text txt
+                      atom (Ref n) = ps Map.! n
+                      option as = foldr1 (##) (map atom as)
+                  in asum $ map (try . option) rule
     p0 = (p Map.! 0) <* eof
-    ptry = try (const True <$> p0) <|> pure False
+    run txt = case parseE p0 txt of
+      Right _ -> True
+      Left _ -> False
+
+try' :: Codensity Parser a -> Codensity Parser a
+try' (Codensity m) = Codensity (\k -> try (m k))
 
 part2 = count True $ map run (snd input)
   where
-    rules = (Map.fromList [(8, "42 | 42 8"),
-                           (11, "42 31 | 42 11 31")] <> fst input)
-    p :: Map Int (ReadP.ReadP ())
+    p :: Map Int (Codensity Parser ())
     p = loeb (sub <$> rules)
-    raw = do char '"'
-             c <- (noneOf "\"")
-             char '"'
-             return (const () <$> ReadP.char c)
-    sub txt rules = let ref = (rules Map.!) <$> p_nat <* spaces
-                        p_rule = do
-                          options <- some $ do
-                            parts <- some (raw <|> ref)
-                            optional (char '|')
-                            spaces
-                            return (foldr1 (*>) parts)
-                          return (asum options)
-                    in parse (p_rule <* eof) txt
-    p0 = (p Map.! 0) <* eof
-    run txt = not $ null $ ReadP.readP_to_S p0 (T.unpack txt)
+    rules = (Map.fromList [(8, parse p_rule "42 | 42 8"),
+                           (11, parse p_rule "42 31 | 42 11 31")]
+              <> fst input)
+    sub rule ps = let atom (Lit txt) = lift (void (text txt))
+                      atom (Ref n) = ps Map.! n
+                      option as = sequence_ (map atom as)
+                  in asum $ map (try' . option) rule
+    p0 = (p Map.! 0) <* lift eof
+    run txt = case parseE (lowerCodensity p0) txt of
+      Right _ -> True
+      Left _ -> False
