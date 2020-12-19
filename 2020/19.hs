@@ -40,7 +40,6 @@ import           System.IO
 import           System.IO.Unsafe
 import           Text.Parser.Char
 import           Text.Parser.Combinators hiding (count)
-import qualified Text.ParserCombinators.ReadP as ReadP
 
 import           Util
 import qualified Util.Text as T
@@ -81,16 +80,14 @@ input = unsafePerformIO (parse p <$> T.readFile "input/19.txt")
 
 part1 = count True $ map run (snd input)
   where
-    p :: Map Int (Parser Text)
+    p :: Map Int (Parser ())
     p = loeb (sub <$> fst input)
-    sub rule ps = let atom (Lit txt) = text txt
+    sub rule ps = let atom (Lit txt) = void (text txt)
                       atom (Ref n) = ps Map.! n
-                      option as = foldr1 (##) (map atom as)
+                      option as = sequence_ (map atom as)
                   in asum $ map (try . option) rule
     p0 = (p Map.! 0) <* eof
-    run txt = case parseE p0 txt of
-      Right _ -> True
-      Left _ -> False
+    run txt = parseBool p0 txt
 
 try' :: Codensity Parser a -> Codensity Parser a
 try' (Codensity m) = Codensity (\k -> try (m k))
@@ -107,6 +104,4 @@ part2 = count True $ map run (snd input)
                       option as = sequence_ (map atom as)
                   in asum $ map (try' . option) rule
     p0 = (p Map.! 0) <* lift eof
-    run txt = case parseE (lowerCodensity p0) txt of
-      Right _ -> True
-      Left _ -> False
+    run txt = parseBool (lowerCodensity p0) txt

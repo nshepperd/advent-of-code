@@ -55,8 +55,8 @@ parseString p txt = case Trifecta.parseString p mempty txt of
   Trifecta.Failure e -> error (show (Trifecta._errDoc e))
 
 -- Return True if the parser is a match for the full string.
-pval :: Parser a -> Text -> Bool
-pval p txt = case Trifecta.parseString (p <* eof) mempty (T.unpack txt) of
+parseBool :: Parser a -> Text -> Bool
+parseBool p txt = case Trifecta.parseString (p <* eof) mempty (T.unpack txt) of
   Trifecta.Success a -> True
   Trifecta.Failure e -> False
 
