@@ -44,6 +44,11 @@ parse p txt = case Trifecta.parseString p mempty (T.unpack txt) of
   Trifecta.Success a -> a
   Trifecta.Failure e -> error (show (Trifecta._errDoc e))
 
+parseE :: Parser a -> Text -> Either String a
+parseE p txt = case Trifecta.parseString p mempty (T.unpack txt) of
+  Trifecta.Success a -> Right a
+  Trifecta.Failure e -> Left (show (Trifecta._errDoc e))
+
 parseString :: Parser a -> String -> a
 parseString p txt = case Trifecta.parseString p mempty txt of
   Trifecta.Success a -> a
