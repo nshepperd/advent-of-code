@@ -15,6 +15,7 @@ import           Data.Semigroup
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Ersatz as E
+import qualified Ersatz.Counting as E
 import qualified Ersatz.Solver.Minisat as E
 import           System.IO.Unsafe
 import           Text.Parser.Char
@@ -91,5 +92,8 @@ solves m = go []
 
 type Ersatz = StateT E.SAT IO
 
-exactly :: Int -> [E.Bit] -> E.Bit
-exactly n xs = sum (map E.bits xs) E.=== fromIntegral n
+-- exactly :: Int -> [E.Bit] -> E.Bit
+-- exactly n xs = sum (map E.bits xs) E.=== fromIntegral n
+
+exactlyOne :: [E.Bit] -> E.Bit
+exactlyOne xs = E.exactly 1 xs
