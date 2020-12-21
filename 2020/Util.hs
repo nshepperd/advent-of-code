@@ -79,6 +79,11 @@ alnums = T.pack <$> some alphaNum
 (##) :: Monoid a => Parser a -> Parser a -> Parser a
 (##) a b = (<>) <$> a <*> b
 
+solve1 :: (E.Equatable a, E.Codec a) => Ersatz a -> [E.Decoded a]
+solve1 m = case unsafePerformIO (E.solveWith E.anyminisat m) of
+  (E.Satisfied, Just x) -> [x]
+  _ -> []
+
 solves :: (E.Equatable a, E.Codec a) => Ersatz a -> [E.Decoded a]
 solves m = go []
   where
