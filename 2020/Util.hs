@@ -5,6 +5,8 @@ module Util where
 
 import           Control.Applicative
 import           Control.Monad
+import           Control.Monad.Codensity
+import           Control.Monad.Trans
 import           Control.Monad.Trans.State
 import           Data.Char
 import           Data.Constraint
@@ -87,8 +89,8 @@ solve1 m = case unsafePerformIO (E.solveWith E.anyminisat m) of
 solves :: (E.Equatable a, E.Codec a) => Ersatz a -> [E.Decoded a]
 solves m = go []
   where
-    go nots = case unsafePerformIO (E.solveWith E.anyminisat m') of
-      (E.Satisfied, Just x) -> x : go [x]
+    go nots = case solve1 m' of
+      [x] -> x : go (x : nots)
       _ -> []
       where
         m' = do a <- m

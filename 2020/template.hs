@@ -12,6 +12,8 @@ import           Control.Concurrent
 import           Control.Concurrent.STM
 import           Control.Concurrent.STM.TQueue
 import           Control.Monad
+import           Control.Monad.Codensity
+import           Control.Monad.Trans
 import           Control.Monad.Trans.State
 import           Data.Bits
 import           Data.Char
@@ -33,6 +35,7 @@ import qualified Data.Vector.Unboxed as U
 import           Data.Word
 import           Debug.Trace
 import qualified Ersatz as E
+import qualified Ersatz.Counting as E
 import qualified Ersatz.Solver.Minisat as E
 import           System.IO
 import           System.IO.Unsafe
