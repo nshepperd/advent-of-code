@@ -50,6 +50,20 @@ newtype EdgeId = EdgeId Int
 newtype TileId = TileId Int
   deriving (Eq, Ord, Show)
 
+data Side = N | E | S | W
+  deriving (Show, Eq, Ord)
+
+type D8 = (Int,Int,Int)
+
+d8 :: [D8]
+d8 = [(a,b,c) | [a,b,c] <- replicateM 3 [0,1]]
+
+runD8 :: D8 -> [[Char]] -> [[Char]]
+runD8 (it, iv, ih) = apply it transpose . apply iv reverse . apply ih (map reverse)
+  where
+    apply 1 f = f
+    apply 0 f = id
+
 input :: Map TileId [[Char]]
 input = unsafePerformIO (parse p <$> T.readFile "input/20.txt")
   where
@@ -64,25 +78,11 @@ input = unsafePerformIO (parse p <$> T.readFile "input/20.txt")
 tileWidth = length . head $ head (toList input)
 tileHeight = length $ head (toList input)
 
-options' s = do
-  xs <- sequence $ Map.fromSet (\_ -> E.exists :: Ersatz E.Bit) s
-  E.assert (exactlyOne (toList xs))
-  return xs
-
-options n = do
-  xs <- replicateM n E.exists :: Ersatz [E.Bit]
-  E.assert (exactlyOne xs)
-  return xs
-
-type D8 = (Int,Int,Int)
-d8 :: [D8]
-d8 = [(a,b,c) | [a,b,c] <- replicateM 3 [0,1]]
-
-runD8 :: D8 -> [[Char]] -> [[Char]]
-runD8 (it, iv, ih) = apply it transpose . apply iv reverse . apply ih (map reverse)
-  where
-    apply 1 f = f
-    apply 0 f = id
+getEdge :: [[Char]] -> Side -> [Char]
+getEdge tile N = head tile
+getEdge tile E = map last tile
+getEdge tile S = last tile
+getEdge tile W = map head tile
 
 edges :: Set [Char]
 edges = Set.fromList $ do
@@ -95,11 +95,10 @@ edgeID = EdgeId <$> Map.fromList (zip (toList edges) [0..])
 edgeIDs :: Set EdgeId
 edgeIDs = Set.fromList (toList edgeID)
 
-data Side = N | E | S | W
-  deriving (Show, Eq, Ord)
-
--- edgeToTiles :: Map Int [Int]
--- edgeToTiles
+edgeToTiles :: Map EdgeId [TileId]
+edgeToTiles = Map.fromListWith (++) (tiles ++ [(e, []) | e <- toList edgeIDs])
+  where
+    tiles = [(e, [t]) | ((t, _, _), e) <- Map.toList tileEdge]
 
 tileEdge :: Map (TileId, D8, Side) EdgeId
 tileEdge = Map.fromList $ do
@@ -107,12 +106,19 @@ tileEdge = Map.fromList $ do
   tr <- d8
   s <- [N, E, S, W]
   let tile' = runD8 tr tile
-      edge = case s of
-        N -> head
-        E -> map last
-        S -> last
-        W -> map head
-  return ((tid, tr, s), edgeID Map.! edge tile')
+      edge = getEdge tile' s
+  return ((tid, tr, s), edgeID Map.! edge)
+
+neighborSets :: Map TileId [TileId]
+neighborSets = Map.fromList $ do
+  (tid, tile) <- Map.toList input
+  let neighbors = do
+        s <- [N, E, S, W]
+        e <- [getEdge tile s, reverse (getEdge tile s)]
+        let eid = edgeID Map.! e
+        n <- edgeToTiles Map.! eid
+        return n
+  return (tid, neighbors)
 
 allowedWE :: Set ((TileId,D8),(TileId,D8))
 allowedWE = Set.fromList $ do
@@ -132,41 +138,55 @@ allowedNS = Set.fromList $ do
   guard $ Map.lookup (tid, o, S) tileEdge == Map.lookup (tid2, o2, N) tileEdge
   return ((tid, o), (tid2, o2))
 
+options :: Set k -> Ersatz (Map k E.Bit)
+options s = do
+  xs <- sequence $ Map.fromSet (\_ -> E.exists :: Ersatz E.Bit) s
+  E.assert (exactlyOne (toList xs))
+  return xs
+
 fromopts :: Map k Bool -> k
 fromopts map = head [i | (i, True) <- Map.toList map]
 
 part1 :: Map (Int,Int) (TileId, D8)
-part1 = final
+part1 = Map.intersectionWith (,) tiles rotation
   where
     gridW = 12
     gridH = 12
-    final = case sol of
-      (grid, orient) -> Map.intersectionWith (,) (fromopts <$> grid) (fromopts <$> orient)
-    sol = head $ solve1 $ do
-      let keys = [(x, y) | x <- [0..gridW-1], y <- [0..gridW-1]]
-          keysSet = Set.fromList keys
-      grid <- sequence $ Map.fromSet (\p -> options' (Map.keysSet input)) keysSet
-      orient <- sequence $ Map.fromSet (\p -> options' (Set.fromList d8)) keysSet
+    keys = [(x, y) | x <- [0..gridW-1], y <- [0..gridW-1]]
+    keysSet = Set.fromList keys
+
+    we_pairs = [((x,y), (x+1,y)) | (x,y) <- keys, x + 1 < gridW]
+    ns_pairs = [((x,y), (x,y+1)) | (x,y) <- keys, y + 1 < gridH]
+
+    tiles :: Map (Int,Int) TileId
+    tiles = fmap fromopts $ head $ solve1 $ do
+      grid <- sequence $ Map.fromSet (\p -> options (Map.keysSet input)) keysSet
       let lookupGrid p i = grid Map.! p Map.! i
-          lookupOrient p o = orient Map.! p Map.! o
-      traverse_ (E.assert . exactlyOne) (transpose $ toList <$> toList grid)
-      for_ keys $ \(x,y) -> do
-        when (x + 1 < gridW) $ do
-          let p = (x,y)
-              p2 = (x+1, y)
-          E.assert $ E.or [E.and [lookupGrid p tid, lookupOrient p o,
-                                  lookupGrid p2 tid2, lookupOrient p2 o2]
-                          | ((tid, o), (tid2, o2)) <- toList allowedWE]
-        when (y + 1 < gridH) $ do
-          let p = (x,y)
-              p2 = (x,y+1)
-          E.assert $ E.or [E.and [grid Map.! p  Map.! tid,  orient Map.! p  Map.! o,
-                                  grid Map.! p2 Map.! tid2, orient Map.! p2 Map.! o2]
-                          | ((tid, o), (tid2, o2)) <- toList allowedNS]
-      return (grid, orient)
+      traverse_ (E.assert . exactlyOne) (transpose (toList <$> toList grid))
+      for_ (we_pairs ++ ns_pairs) $ \(p,p2) -> do
+        for_ (Map.toList neighborSets) $ \(tid, ns) -> do
+          E.assert $ lookupGrid p tid E.==>
+            E.or [lookupGrid p2 tid2 | tid2 <- ns]
+      return grid
+
+    rotation :: Map (Int,Int) D8
+    rotation = fmap fromopts $ head $ solve1 $ do
+      grid <- sequence $ Map.fromSet (\p -> options (Set.fromList d8)) keysSet
+      let lookupGrid p o = grid Map.! p Map.! o
+      for_ we_pairs $ \(p,p2) -> do
+        E.assert $ E.or [E.and [lookupGrid p o, lookupGrid p2 o2]
+                        | ((tid, o), (tid2, o2)) <- toList allowedWE,
+                          tid == tiles Map.! p,
+                          tid2 == tiles Map.! p2]
+      for_ ns_pairs $ \(p,p2) -> do
+        E.assert $ E.or [E.and [lookupGrid p o, lookupGrid p2 o2]
+                        | ((tid, o), (tid2, o2)) <- toList allowedNS,
+                          tid == tiles Map.! p,
+                          tid2 == tiles Map.! p2]
+      return grid
 
 solved_part1 :: Map (Int,Int) (TileId, D8)
-solved_part1 = first TileId <$> unsafePerformIO (read <$> readFile "output/20.txt")
+solved_part1 = part1 -- first TileId <$> unsafePerformIO (read <$> readFile "output/20.txt")
 
 part2 = head monsters
   where
@@ -196,6 +216,4 @@ part2 = head monsters
 main :: IO ()
 main = do
   print part1
-  -- let val = part1
-  -- print val
-  -- writeFile "output/20.txt" (show val)
+  print part2
