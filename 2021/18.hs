@@ -71,9 +71,6 @@ parseInput = some (p_snail <* spaces)
 input = unsafePerformIO (parse parseInput <$> T.readFile "input/18.txt")
 sample = unsafePerformIO (parse parseInput <$> T.readFile "input/18_sample.txt")
 
-data GoExplode = Exploded (Maybe Int) Snail (Maybe Int)
-               | NoExplode
-
 reduce :: Snail -> Snail
 reduce snail = go snail
   where
