@@ -73,6 +73,7 @@ part1 grid = astar actions step goal s0 out
     actions p = [n | n <- neighbors p, Map.member n grid]
     step p a = (a, grid Map.! a)
     goal p = sum (abs <$> (p - targetPos)) -- L1 distance
+    -- goal p = if p == targetPos then 0 else 1
     s0 = V2 0 0
     out p a n c = Sum c
 
