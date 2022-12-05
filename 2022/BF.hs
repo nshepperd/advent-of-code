@@ -41,7 +41,7 @@ bf program = go 0 0 Map.empty
       '>' -> go (pc+1) (p + 1) mem
       '<' -> go (pc+1) (p - 1) mem
       '+' -> go (pc+1) p (Map.insert p (look p + 1) mem)
-      '-' -> go (pc+1) p (Map.insert p (look p - 1) mem)
+      '-' -> go (pc+1) p (Map.insert p (max 0 (look p - 1)) mem)
       '.' -> Out (look p) (go (pc+1) p mem)
       ',' -> In (\v -> go (pc+1) p (Map.insert p v mem))
       '[' -> case look p of
@@ -50,10 +50,7 @@ bf program = go 0 0 Map.empty
       ']' -> case look p of
                0 -> go (pc+1) p mem
                _ -> go ((matching!!pc)+1) p mem
-      ' ' -> go (pc+1) p mem
-      '\n' -> go (pc+1) p mem
-      '\t' -> go (pc+1) p mem
-      c -> error (show c)
+      _ -> go (pc+1) p mem
       where
         look p = Map.findWithDefault 0 p mem
 
