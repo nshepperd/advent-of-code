@@ -3,6 +3,7 @@
 import           Control.Applicative
 import           Data.Char
 import           Data.Foldable
+import           Data.List
 import           Data.List.Split (chunksOf)
 import qualified Data.Text.IO as T
 import           Data.Traversable
@@ -19,18 +20,10 @@ input,sample :: ([String], [(Int,Int,Int)])
     p = do
       diagram <- some $ try $ do
         some (oneOf " []" <|> letter) <* string "\n"
-
-      let
-        stacks = let go line [] =
-                       [[c] | c <- line, isAlpha c]
-                     go line stacks =
-                       [case part of
-                          (_:c:_) | isAlpha c -> c:stac
-                          _ -> stac
-                          | (part, stac) <- zip (chunksOf 4 line ++ repeat []) stacks]
-                 in foldr go [] diagram
-
       some (char ' ' <|> digit) <* spaces
+
+      let stacks = map (filter isAlpha) $ transpose $ map (concat . map (take 1 . drop 1) . chunksOf 4) diagram
+
       moves <- some $ do
         text "move "
         n <- p_int

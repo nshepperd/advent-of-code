@@ -21,7 +21,6 @@ import           Data.Foldable
 import           Data.Function.Memoize
 import           Data.Int
 import           Data.List
-import           Data.List.Split (chunksOf)
 import           Data.Map (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Set (Set)
@@ -48,8 +47,15 @@ import           Text.Parser.Combinators hiding (count)
 
 import           Util
 
-input :: _
-input = unsafePerformIO (parse p <$> T.readFile "input/__.txt")
+input :: String
+input = unsafePerformIO (T.unpack . T.filter isAlpha <$> T.readFile "input/06.txt")
+
+sample1 = "mjqjpqmgbljsphdztnvjfqwrcgsmlb"
+
+part1 input = head [T.length sub | sub <- T.inits vec, (length $ nub $ T.unpack $ T.take 4 $ T.reverse sub) == 4]
   where
-    p = some $ do
-      _
+    vec = T.pack input
+
+part2 input = head [T.length sub | sub <- T.inits vec, (length $ nub $ T.unpack $ T.take 14 $ T.reverse sub) == 14]
+  where
+    vec = T.pack input
