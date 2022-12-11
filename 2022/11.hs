@@ -58,11 +58,10 @@ data Monkey = Monkey {
 part1 input = product $ take 2 $ reverse $ sort $ map sum $ transpose $ take 20 $ go (map startingItems input)
   where
     n = length input
-    go items = foldr step finish [0..n-1] items
-    finish items = [] : go items
-    step i k items = let items' = foldr f z (items!!i) (items & ix i .~ [])
-                         (x:xs) = k items'
-                     in (length (items!!i) : x) : xs
+    go items = foldr step finish [0..n-1] items []
+    finish items inspects = reverse inspects : go items
+    step i k items inspects = let items' = foldr f z (items!!i) (items & ix i .~ [])
+                              in k items' (length (items!!i) : inspects)
       where
         op = operation (input!!i)
         testval = test (input!!i)
