@@ -49,8 +49,28 @@ import           Text.Parser.Combinators hiding (count)
 
 import           Util
 
-input, sample :: _
-[input, sample] = fmap (parse p . unsafePerformIO . T.readFile) ["input/__.txt", "sample/__.txt"]
+
+data Op = Noop | Addx Int
+  deriving (Show)
+
+input :: [Op]
+(input, sample) = over each (parse p . unsafePerformIO . T.readFile) ("input/10.txt",
+                                                            "sample/10.txt")
   where
     p = some $ do
-      _
+      ((Noop <$ text "noop") <|> (Addx <$> (text "addx " *> p_int))) <* spaces
+
+part1 input = sum $ map (uncurry (*)) $ map head $ chunksOf 40 $ drop 19 $ zip [1..] $ foldr go finish input 1
+  where
+    go Noop k x = x : k x
+    go (Addx n) k x = [x, x] ++ k (x + n)
+    finish x = []
+
+part2 input = putStrLn $ unlines $ map concat $ chunksOf 40 $ lit
+  where
+    lit = [if abs (x - dx) <= 1 then "██" else "░░"  | (V2 x y, dx) <- zip positions xs]
+    xs = foldr go finish input 1
+    positions = [V2 x y | y <- [0..5], x <- [0..39]]
+    go Noop k x = x : k x
+    go (Addx n) k x = [x, x] ++ k (x + n)
+    finish x = []
