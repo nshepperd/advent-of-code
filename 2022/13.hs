@@ -31,7 +31,7 @@ input, sample :: [[L]]
 p_l = p_list <|> (I <$> p_int)
 p_list = char '[' *> (L <$> (p_l `sepBy` (char ','))) <* char ']'
 
-part1 input = sum [i | (i, [a,b]) <- zip [1..] input, a < b]
+part1 input = [i | (i, [a,b]) <- zip [1..] input, a < b]
 
 part2 input = product [i | (i, packet) <- zip [1..] (sort (concat input ++ extra)), packet `elem` extra]
   where
