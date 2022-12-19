@@ -5,7 +5,7 @@ import           Data.Foldable
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.Text.IO as T
-import           Linear.V3
+import           Linear
 import           System.IO.Unsafe
 import           Text.Parser.Char
 import           Text.Parser.Combinators hiding (count)
@@ -22,7 +22,7 @@ input, sample :: [V3 Int]
       return (V3 a b c)
 
 ds :: [V3 Int]
-ds = concat [[V3 x 0 0, V3 0 x 0, V3 0 0 x] | x <- [-1,1]]
+ds = basis ++ (negate <$> basis)
 
 part1 input = sum [1 | cube <- input, d <- ds, not (Set.member (cube + d) iset)]
   where
