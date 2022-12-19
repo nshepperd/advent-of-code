@@ -8,43 +8,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 import           Control.Applicative
-import           Control.Concurrent
-import           Control.Concurrent.STM
-import           Control.Concurrent.STM.TQueue
-import           Control.Lens
-import           Control.Monad
-import           Control.Monad.Codensity
-import           Control.Monad.Trans
-import           Control.Monad.Trans.State
-import           Data.Bits
-import           Data.Char
 import           Data.Foldable
-import           Data.Function.Memoize
-import           Data.Int
-import           Data.List
-import           Data.List.Split (chunksOf)
-import           Data.Map (Map)
-import qualified Data.Map.Strict as Map
 import           Data.Monoid
-import           Data.Set (Set)
-import qualified Data.Set as Set
-import           Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import           Data.Traversable
-import           Data.Vector (Vector)
-import qualified Data.Vector.Generic as V
-import qualified Data.Vector.Unboxed as U
-import           Data.Word
 import           Debug.Trace
-import qualified Ersatz as E
-import qualified Ersatz.Counting as E
-import qualified Ersatz.Solver.Minisat as E
 import           Linear
-import           Linear.V2
-import           Linear.V3
 import           Linear.V4
-import           System.IO
 import           System.IO.Unsafe
 import           Text.Parser.Char
 import           Text.Parser.Combinators hiding (count)
@@ -73,10 +42,6 @@ input, sample :: [V4 (V4 Int)]
               (V4 clay_ore 0 0 0)
               (V4 obs_ore obs_clay 0 0)
               (V4 geode_ore 0 geode_obs 0))
-
-instance Memoizable (V4 Int) where
-  memoize f = let y = memoize (\(a,b,c,d) -> f (V4 a b c d))
-              in \(V4 a b c d) -> y (a,b,c,d)
 
 part1 input = sum [i * solve reqs 24 | (i,reqs) <- zip [1..] input]
 part2 input = product [solve reqs 32 | reqs <- take 3 input]
