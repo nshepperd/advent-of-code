@@ -70,10 +70,10 @@ solve reqs time = simple s0 - getSum (astar actions step goal s0 output)
         req = ix *! reqs
         st' = (res + bots - req, bots + ix, t-1)
     goal (res, bots, t)
-      | (t == 0) = 0 -- traceShow t
+      | traceShow t (t == 0) = 0 --
       | t > 0 = 1
     s0 = (0, V4 1 0 0 0, time)
     output s a n c = (Sum c)
 
 main :: IO ()
-main = do print ("yay", part2 input)
+main = do print ("yay", part2 sample)
