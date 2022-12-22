@@ -22,9 +22,6 @@ import           Util
 
 sample = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>" :: String
 
-paragraphs :: Text -> [[Text]]
-paragraphs txt = map T.lines (T.splitOn "\n\n" txt)
-
 data Rocc = Rocc { roccWidth :: Int, roccHeight :: Int, roccSet :: Set (V2 Int) }
   deriving Show
 

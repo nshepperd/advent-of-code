@@ -106,3 +106,6 @@ type Ersatz = StateT E.SAT IO
 
 exactlyOne :: [E.Bit] -> E.Bit
 exactlyOne xs = E.exactly 1 xs
+
+paragraphs :: Text -> [[Text]]
+paragraphs txt = map T.lines (T.splitOn "\n\n" txt)
