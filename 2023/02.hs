@@ -12,9 +12,6 @@ import qualified Text.Trifecta as Trifecta
 
 import           Util
 
--- data Color = R | G | B
---   deriving (Show,Eq,Ord)
-
 input, sample :: [(Int, [[(Int,Text)]])]
 [input, sample] = fmap (parse p . unsafePerformIO . T.readFile) ["input/02.txt", "sample/02.txt"]
   where
