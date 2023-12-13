@@ -44,8 +44,8 @@ solve r input = sum [sum (abs <$> (p - q)) | p:ps <- tails expanded, q <- ps]
 
     e_xs = Set.difference (Set.fromList [Set.findMin g_xs .. Set.findMax g_xs]) g_xs
     e_ys = Set.difference (Set.fromList [Set.findMin g_ys .. Set.findMax g_ys]) g_ys
-
-    expanded = [V2 (x + (r-1)*Set.size (fst (Set.split x e_xs))) (y + (r-1)*Set.size (fst (Set.split y e_ys)))  | V2 x y <- Set.toList galaxies]
+    prior x xs = Set.size (fst (Set.split x xs))
+    expanded = [V2 (x + (r-1)*prior x e_xs) (y + (r-1)*prior y e_ys) | V2 x y <- Set.toList galaxies]
 
 part1 = solve 2
 part2 = solve 1000000
