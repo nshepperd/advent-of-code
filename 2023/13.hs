@@ -40,26 +40,18 @@ input, sample :: [[String]]
     p_pat = some $ some (oneOf ".#") <* optional "\n"
 
 splits :: [a] -> [([a],[a])]
-splits xs = go [] xs
+splits (x:xs) = go [x] xs
   where
-    go xs [] = [(xs, [])]
+    go xs [] = []
     go xs (y:ys) = (xs, y:ys) : go (y:xs) ys
 
-solve grid = 100 * sum (reflect rows) + sum (reflect cols)
+reflect1 xs = sum [length a | (a,b) <- splits xs, all id (zipWith (==) a b)]
+reflect2 xs = sum [length a | (a,b) <- splits xs, 1 == length (filter id (zipWith (/=) (concat a) (concat b)))]
+
+solve reflect grid = 100 * reflect rows + reflect cols
   where
-    reflect xs = [length a | (a,b) <- splits xs, all id (zipWith (==) a b), min (length a) (length b) > 0]
-    rows = [Map.fromList (zip grid [0..]) Map.! line | line <- grid]
-    cols = [Map.fromList (zip (transpose grid) [0..]) Map.! line | line <- (transpose grid)]
+    rows = grid
+    cols = transpose grid
 
-solve2 grid = 100 * sum (reflect rows) + sum (reflect cols)
-  where
-    reflect xs = [length a | (a,b) <- splits xs,
-                   1 == length (filter not (zipWith (==) a b)),
-                   head [length (filter not (zipWith (==) x y)) == 1 | (x,y) <- zip a b, x /= y],
-                   min (length a) (length b) > 0]
-    rows = grid -- [Map.fromList (zip grid [0..]) Map.! line | line <- grid]
-    cols = transpose grid -- [Map.fromList (zip (transpose grid) [0..]) Map.! line | line <- (transpose grid)]
-
-part1 input = sum $ map solve input
-
-part2 input = sum $ map solve2 input
+part1 input = sum $ map (solve reflect1) input
+part2 input = sum $ map (solve reflect2) input
