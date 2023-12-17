@@ -91,4 +91,6 @@ part2 grid = heat $ head $ astarOn key actions goal start
                                      ]
     grouped prev = fold (take 1 (group prev))
     gridp (V2 x y) = read $ pure (grid!!y!!x)
-    goal (S pos _ _ _) = sum $ abs <$> (V2 (xmax-1) (ymax-1) - pos)
+    goal (S pos prev _ _)
+      | length prev >= 4 = sum $ abs <$> (V2 (xmax-1) (ymax-1) - pos)
+      | otherwise = 1 `max` sum (abs <$> (V2 (xmax-1) (ymax-1) - pos))
